@@ -9,6 +9,7 @@ import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
 import com.soria.Ejemplo.Modelo.Empleado;
+import com.soria.Ejemplo.Modelo.EmpleadoSimple;
 
 
 /**
@@ -21,7 +22,16 @@ public class App
     {
     	
         //ejemploRegistro();
-        ejemploLecturaEmpleados();
+        //ejemploLecturaEmpleados();
+        //ejemploLecturaProyeccion();
+        //ejemploWhere();
+        //ejemploOrderBy();
+    	//ejemploOrderByCompuesto();
+    	//ejemploOrderByCompuesto2();
+    	//ejemploOrderByCompuesto3();
+    	//ejemploGroupBy();
+    	//ejemploParametros(90);
+    	ejemploUpdate(92, "Rick");
     }
 
 	private static void ejemploLecturaEmpleados() {
@@ -70,6 +80,224 @@ public class App
     		//Realizamos el commit
     		tx.commit();
     		System.out.println( "Se registró con éxito, id:" + numero );
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	
+	private static void ejemploLecturaProyeccion() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		Query consulta = sesion.createQuery(
+    			"SELECT new com.soria.Ejemplo.Modelo.EmpleadoSimple(E.id, E.apellido) FROM Empleado E");
+    		List empleados = consulta.list();
+    		
+    		for(Iterator iterador = empleados.iterator(); iterador.hasNext();) {
+    			EmpleadoSimple emp = (EmpleadoSimple)iterador.next();
+    			System.out.println( "id:" + emp.getCodigo() );
+    			System.out.println( "apellido:" + emp.getApellido() );
+    			System.out.println( "------------------------------");
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	private static void ejemploWhere() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		Query consulta = sesion.createQuery(
+    			"FROM Empleado E WHERE E.id < 50");
+    		List empleados = consulta.list();
+    		
+    		for(Iterator iterador = empleados.iterator(); iterador.hasNext();) {
+    			Empleado emp = (Empleado)iterador.next();
+    			System.out.println( "id:" + emp.getId() );
+    			System.out.println( "apellido:" + emp.getApellido() );
+    			System.out.println( "------------------------------");
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	private static void ejemploOrderBy() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		Query consulta = sesion.createQuery(
+    			"FROM Empleado E ORDER BY E.apellido");
+    		List empleados = consulta.list();
+    		
+    		for(Iterator iterador = empleados.iterator(); iterador.hasNext();) {
+    			Empleado emp = (Empleado)iterador.next();
+    			System.out.println( "id:" + emp.getId() + ", apellido:" + emp.getApellido() );
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	private static void ejemploOrderByCompuesto() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		Query consulta = sesion.createQuery(
+    			"FROM Empleado E ORDER BY E.apellido DESC, E.nombre ASC, E.id DESC");
+    		List empleados = consulta.list();
+    		
+    		for(Iterator iterador = empleados.iterator(); iterador.hasNext();) {
+    			Empleado emp = (Empleado)iterador.next();
+    			System.out.println( "id:" + emp.getId() + ",\t nombre:" + emp.getNombre() + ",\t apellido:" + emp.getApellido() );
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	private static void ejemploOrderByCompuesto2() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		Query consulta = sesion.createQuery(
+    			"FROM Empleado E WHERE id < 50 ORDER BY E.apellido, E.id DESC");
+    		List empleados = consulta.list();
+    		
+    		for(Iterator iterador = empleados.iterator(); iterador.hasNext();) {
+    			Empleado emp = (Empleado)iterador.next();
+    			System.out.println( "id:" + emp.getId() + ",\t nombre:" + emp.getNombre() + ",\t apellido:" + emp.getApellido() );
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	private static void ejemploOrderByCompuesto3() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		Query consulta = sesion.createQuery(
+    			"FROM Empleado E WHERE id < 50 ORDER BY E.apellido, E.id DESC");
+    		List empleados = consulta.list();
+    		
+    		for(Iterator iterador = empleados.iterator(); iterador.hasNext();) {
+    			Empleado emp = (Empleado)iterador.next();
+    			System.out.println( "id:" + emp.getId() + ",\t nombre:" + emp.getNombre() + ",\t apellido:" + emp.getApellido() );
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	private static void ejemploGroupBy() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		Query consulta = sesion.createQuery(
+    			"SELECT SUM(id) FROM Empleado E GROUP BY E.apellido");
+    		List valores = consulta.list();
+    		
+    		for(Iterator iterador = valores.iterator(); iterador.hasNext();) {
+    			long emp = (long)iterador.next();
+    			System.out.println( "sum:" + emp );
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	private static void ejemploParametros(int valor) {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		Query consulta = sesion.createQuery(
+    			"FROM Empleado E WHERE E.id < :un_id");
+    		consulta.setParameter("un_id", valor);
+    		List valores = consulta.list();
+    		
+    		for(Iterator iterador = valores.iterator(); iterador.hasNext();) {
+    			Empleado emp = (Empleado)iterador.next();
+    			System.out.println( "id:" + emp.getId() + ",\t nombre:" + emp.getNombre() + ",\t apellido:" + emp.getApellido() );
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	private static void ejemploUpdate(int id, String nombre) {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		Empleado emp = sesion.get(Empleado.class, id);
+    		emp.setNombre(nombre);
+    		sesion.update(emp);
+    		
+    		tx.commit();
     	}catch(HibernateException he) {
     		if(tx!=null)
     			tx.rollback();

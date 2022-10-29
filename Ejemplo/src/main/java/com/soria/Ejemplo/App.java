@@ -1,5 +1,6 @@
 package com.soria.Ejemplo;
 
+import java.math.BigDecimal;
 import java.util.Iterator;
 import java.util.List;
 
@@ -31,7 +32,8 @@ public class App
     	//ejemploOrderByCompuesto3();
     	//ejemploGroupBy();
     	//ejemploParametros(90);
-    	ejemploUpdate(92, "Rick");
+    	//ejemploUpdate(2, "Anna");
+    	ejemploDelete(92);
     }
 
 	private static void ejemploLecturaEmpleados() {
@@ -297,6 +299,89 @@ public class App
     		emp.setNombre(nombre);
     		sesion.update(emp);
     		
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	
+	private static void ejemploDelete(int id) {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		Empleado emp = (Empleado)sesion.get(Empleado.class, id);
+    		sesion.delete(emp);
+    		
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	
+	private static void ejemploCUD_HQL() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		Query consulta = sesion.createQuery(
+    			"INSERT INTO Empleado(id, nombre, apellido) SELECT un_id, un_nombre, un_apellido FROM otro_objeto");
+    		int respuesta = consulta.executeUpdate();
+    		
+    		Query consulta2 = sesion.createQuery(
+        			"UPDATE Empleado SET apellido = :ap WHERE id = :e_id");
+    		consulta2.setParameter("ap", "Rocha");
+    		consulta2.setParameter("e_id", 77);
+        	int respuesta2 = consulta2.executeUpdate();
+        	
+        	Query consulta3 = sesion.createQuery(
+        			"DELETE FROM Empleado WHERE id = :e_id");
+        	consulta3.setParameter("e_id", 90);
+        	int respuesta3 = consulta3.executeUpdate();
+        		
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	
+	private static void ejemplo_funciones_agregacion_HQL() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		Query consulta = sesion.createQuery(
+    			"SELECT SUM(id) FROM Empleado");
+    		Long resultado1 = (Long)consulta.getResultList().get(0);
+    		
+    		Query consulta2 = sesion.createQuery(
+        		"SELECT AVG(id) FROM Empleado");
+    		Double resultado2 = (Double)consulta2.getResultList().get(0);
+        	
+    		Query consulta3 = sesion.createQuery(
+        		"SELECT MAX(id) FROM Empleado");
+        	Query consulta4 = sesion.createQuery(
+            	"SELECT MIN(id) FROM Empleado");
+            BigDecimal resultado34 = (BigDecimal)consulta4.getResultList().get(0);
+            	
     		tx.commit();
     	}catch(HibernateException he) {
     		if(tx!=null)

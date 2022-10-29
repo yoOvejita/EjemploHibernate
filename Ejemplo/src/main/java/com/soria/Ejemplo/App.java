@@ -33,7 +33,10 @@ public class App
     	//ejemploGroupBy();
     	//ejemploParametros(90);
     	//ejemploUpdate(2, "Anna");
-    	ejemploDelete(92);
+    	//ejemploDelete(92);
+    	//ejemploPaginacion();
+    	
+    	//TODO empezamos con Mapeo de colecciones
     }
 
 	private static void ejemploLecturaEmpleados() {
@@ -382,6 +385,33 @@ public class App
             	"SELECT MIN(id) FROM Empleado");
             BigDecimal resultado34 = (BigDecimal)consulta4.getResultList().get(0);
             	
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	private static void ejemploPaginacion() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		String hql = "FROM Empleado";
+    		Query query = sesion.createQuery(hql);
+    		query.setFirstResult(2);
+    		query.setMaxResults(4);
+    		List resultado = query.list();
+    		System.out.println("Exito");
+    		for(Iterator iterador = resultado.iterator(); iterador.hasNext();) {
+    			Empleado emp = (Empleado)iterador.next();
+    			System.out.println("Empleado " + emp.getApellido() + " id: " + emp.getId());
+    		}
+    		
     		tx.commit();
     	}catch(HibernateException he) {
     		if(tx!=null)

@@ -18,6 +18,7 @@ import jakarta.persistence.ParameterMode;
 import jakarta.persistence.StoredProcedureQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Root;
 
 
@@ -267,7 +268,7 @@ public class App
     		List valores = consulta.list();
     		
     		for(Iterator iterador = valores.iterator(); iterador.hasNext();) {
-    			long emp = (long)iterador.next();
+    			long emp = (Long) iterador.next();
     			System.out.println( "sum:" + emp );
     		}
     		tx.commit();
@@ -601,7 +602,7 @@ DELIMITER;
     		CriteriaBuilder builder = sesion.getCriteriaBuilder();
     		CriteriaQuery<Empleado> consulta = builder.createQuery(Empleado.class);
     		Root<Empleado> raiz = consulta.from(Empleado.class);
-    		//consulta.select(raiz).where(builder.ge(raiz.get("id"), val));
+    		consulta.select(raiz).where(builder.ge((Expression)raiz.get("id"), val));
     		
     		tx.commit();
     	}catch(HibernateException he) {

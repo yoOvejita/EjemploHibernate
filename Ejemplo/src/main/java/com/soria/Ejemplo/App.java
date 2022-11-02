@@ -11,6 +11,14 @@ import org.hibernate.query.Query;
 
 import com.soria.Ejemplo.Modelo.Empleado;
 import com.soria.Ejemplo.Modelo.EmpleadoSimple;
+import com.soria.Ejemplo.Modelo.EmpleadoVentaJoin;
+import com.soria.Ejemplo.Modelo.Venta;
+
+import jakarta.persistence.ParameterMode;
+import jakarta.persistence.StoredProcedureQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 
 
 /**
@@ -36,7 +44,12 @@ public class App
     	//ejemploDelete(92);
     	//ejemploPaginacion();
     	
-    	//TODO empezamos con Mapeo de colecciones
+    	//ejemploRelacion();
+    	//ejemploJoin();
+    	//ejemploFunciones();
+    	//ejemploFuncionesConParametros(5, 77);
+    	//ejemploCriteriaQuery();
+    	ejemploCriteriaQueryConCondiciones(60);
     }
 
 	private static void ejemploLecturaEmpleados() {
@@ -420,5 +433,184 @@ public class App
     	}finally {
     		sesion.close();
     	}
+	}
+	
+	private static void ejemploRelacion() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		String hql = "FROM Empleado WHERE id = 5";
+    		Query query = sesion.createQuery(hql);
+    		Empleado emp = (Empleado) query.uniqueResult();
+    		System.out.println("Exito recuperando al empleado");
+    		System.out.println(emp.getNombre());
+    		for(Iterator iterador = emp.getVentas().iterator(); iterador.hasNext();) {
+    			Venta v = (Venta) iterador.next();
+    			System.out.println("Cantidad: " + v.getCantidad() + ", Prod: " + v.getIdprod());
+    		}
+    		
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	
+	private static void ejemploJoin() {
+		// SELECT nombre, idprod, cantidad FROM venta v INNER JOIN empleado e ON e.id = v.idemp;
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		String hql = "SELECT new com.soria.Ejemplo.Modelo.EmpleadoVentaJoin(E.nombre, V.idprod, V.cantidad) "
+    				+ "FROM Venta V, Empleado E  WHERE V.empleado = E";
+    		Query query = sesion.createQuery(hql);
+    		List<EmpleadoVentaJoin>  empv= query.getResultList();
+    		System.out.println("Exito");
+    		for(EmpleadoVentaJoin em : empv) {
+    			System.out.println("Nombre: " + em.getNombre() + ", Prod: " + em.getIdprod() + ", cantidad: " + em.getCantidad());
+    		}
+    		
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+	}
+	private static void ejemploFunciones() {
+		//Procedimientos almacenados en MySQL
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		//Query query = sesion.createNativeQuery("{CALL prueba()}", Empleado.class);//MySQL
+    		Query query = sesion.createNativeQuery("SELECT * FROM prueba()", Empleado.class);
+    		List<Empleado> emps = query.getResultList();
+    		for(Empleado em : emps) {
+    			System.out.println("Nombre: " + em.getNombre() + ", Apellido: " + em.getApellido());
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploFuncionesConParametros(int min, int max) {
+		/*
+PostgreSQL:
+empresay=# CREATE OR REPLACE FUNCTION listar(menor INTEGER, mayor INTEGER)
+empresay-# RETURNS TABLE (id INT, nombre VARCHAR, apellido VARCHAR)
+empresay-# AS $$
+empresay$# SELECT * FROM empleado WHERE id >= menor AND id <= mayor;
+empresay$# $$
+empresay-# LANGUAGE SQL;
+
+MySQL:
+DELIMITER $$
+CREATE PROCEDURE listar(menor INTEGER, mayor INTEGER)
+BEGIN
+SELECT * FROM empleado WHERE id BETWEEN menor AND mayor;
+END $$
+DELIMITER;
+
+		 * */
+		
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		/*
+    		//Con persistence:
+    		StoredProcedureQuery spq = sesion.createStoredProcedureQuery("listar", Empleado.class);
+    		spq.registerStoredProcedureParameter("menor", Integer.class, ParameterMode.IN);
+    		spq.registerStoredProcedureParameter("mayor", Integer.class, ParameterMode.IN);
+    		spq.setParameter("menor", min);
+    		spq.setParameter("mayor", max);
+    		List<Empleado> emps2 = spq.getResultList(); 
+    		//...
+    		*/
+    		
+    		//Query query = sesion.createNativeQuery("{CALL listar(?, ?)}", Empleado.class);//MySQL
+    		Query query = sesion.createNativeQuery("SELECT * FROM listar(?,?)", Empleado.class);
+    		query.setParameter(1, min);
+    		query.setParameter(2, max);
+    		List<Empleado> emps = query.getResultList();
+    		for(Empleado em : emps) {
+    			System.out.println("Nombre: " + em.getNombre() + ", Apellido: " + em.getApellido());
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploCriteriaQuery() {
+		//jakarta.persistence
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		CriteriaQuery<Empleado> cq = sesion.getCriteriaBuilder().createQuery(Empleado.class);
+    		cq.from(Empleado.class);
+    		List<Empleado> emps = sesion.createQuery(cq).getResultList();
+    		for(Empleado em : emps) {
+    			System.out.println("Nombre: " + em.getNombre() + ", Apellido: " + em.getApellido());
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploCriteriaQueryConCondiciones(int val) {
+		//jakarta.persistence
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		CriteriaBuilder builder = sesion.getCriteriaBuilder();
+    		CriteriaQuery<Empleado> consulta = builder.createQuery(Empleado.class);
+    		Root<Empleado> raiz = consulta.from(Empleado.class);
+    		//consulta.select(raiz).where(builder.ge(raiz.get("id"), val));
+    		
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
 	}
 }

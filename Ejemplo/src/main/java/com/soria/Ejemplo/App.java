@@ -19,7 +19,9 @@ import jakarta.persistence.StoredProcedureQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Selection;
 
 
 /**
@@ -50,7 +52,13 @@ public class App
     	//ejemploFunciones();
     	//ejemploFuncionesConParametros(5, 77);
     	//ejemploCriteriaQuery();
-    	ejemploCriteriaQueryConCondiciones(60);
+    	//ejemploCriteriaQueryConCondiciones(60);
+    	//ejemploCriteriaQueryBetween(5, 90);
+    	//ejemploCriteriaQueryLike();
+    	//ejemploCriteriaQueryOrderBy("ASC");
+    	//ejemploCriteriaQueryOrderByLimit("DESC", 3);
+    	//ejemploCriteriaQueryProyeccion();
+    	ejemploCriteriaQueryInnerJoin();
     }
 
 	private static void ejemploLecturaEmpleados() {
@@ -593,6 +601,7 @@ DELIMITER;
 	}
 	private static void ejemploCriteriaQueryConCondiciones(int val) {
 		//jakarta.persistence
+		//SELECT * FROM empleado WHERE id >= 60;
 		Transaction tx = null;
     	Session sesion = HibernateUtil.getSessionfactory().openSession();
     	try {
@@ -603,7 +612,185 @@ DELIMITER;
     		CriteriaQuery<Empleado> consulta = builder.createQuery(Empleado.class);
     		Root<Empleado> raiz = consulta.from(Empleado.class);
     		consulta.select(raiz).where(builder.ge((Expression)raiz.get("id"), val));
+    		List<Empleado> emps = sesion.createQuery(consulta).getResultList();
+    		for(Empleado em : emps) {
+    			System.out.println("Nombre: " + em.getNombre() + ", Apellido: " + em.getApellido());
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploCriteriaQueryBetween(int inicio, int fin) {
+		//SELECT * FROM empleado WHERE id BETWEEN 5 AND 90;
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
     		
+    		CriteriaBuilder builder = sesion.getCriteriaBuilder();
+    		CriteriaQuery<Empleado> consulta = builder.createQuery(Empleado.class);
+    		Root<Empleado> raiz = consulta.from(Empleado.class);
+    		consulta.select(raiz).where(builder.between((Expression)raiz.get("id"), inicio, fin));
+    		List<Empleado> emps = sesion.createQuery(consulta).getResultList();
+    		for(Empleado em : emps) {
+    			System.out.println("ID: "+ em.getId() +"; Nombre: " + em.getNombre() + ", Apellido: " + em.getApellido());
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploCriteriaQueryLike() {
+		//SELECT * FROM empleado WHERE apellido LIKE '%r%';
+		//SELECT * FROM empleado WHERE apellido LIKE '___a';
+		//SELECT * FROM empleado WHERE apellido LIKE '_o_a%';
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		CriteriaBuilder builder = sesion.getCriteriaBuilder();
+    		CriteriaQuery<Empleado> consulta = builder.createQuery(Empleado.class);
+    		Root<Empleado> raiz = consulta.from(Empleado.class);
+    		consulta.select(raiz).where(builder.like((Expression)raiz.get("apellido"), "___a"));// "%r%"
+    		List<Empleado> emps = sesion.createQuery(consulta).getResultList();
+    		for(Empleado em : emps) {
+    			System.out.println("ID: "+ em.getId() +"; Nombre: " + em.getNombre() + ", Apellido: " + em.getApellido());
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploCriteriaQueryOrderBy(String tipo) {
+		//SELECT * FROM empleado ORDER BY apellido;
+		//SELECT * FROM empleado ORDER BY apellido DESC;
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		CriteriaBuilder builder = sesion.getCriteriaBuilder();
+    		CriteriaQuery<Empleado> consulta = builder.createQuery(Empleado.class);
+    		Root<Empleado> raiz = consulta.from(Empleado.class);
+    		if(tipo.equals("DESC"))
+    			consulta.select(raiz).orderBy(builder.desc(raiz.get("apellido")));
+    		else
+    			consulta.select(raiz).orderBy(builder.asc(raiz.get("apellido")));
+    		
+    		List<Empleado> emps = sesion.createQuery(consulta).getResultList();
+    		for(Empleado em : emps) {
+    			System.out.println("ID: "+ em.getId() +"; Nombre: " + em.getNombre() + ", Apellido: " + em.getApellido());
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploCriteriaQueryOrderByLimit(String tipo, int maximo) {
+		//SELECT * FROM empleado ORDER BY apellido LIMIT 3;
+		//SELECT * FROM empleado ORDER BY apellido DESC LIMIT 3;
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		CriteriaBuilder builder = sesion.getCriteriaBuilder();
+    		CriteriaQuery<Empleado> consulta = builder.createQuery(Empleado.class);
+    		Root<Empleado> raiz = consulta.from(Empleado.class);
+    		if(tipo.equals("DESC"))
+    			consulta.select(raiz).orderBy(builder.desc(raiz.get("apellido")));
+    		else
+    			consulta.select(raiz).orderBy(builder.asc(raiz.get("apellido")));
+    		
+    		List<Empleado> emps = sesion.createQuery(consulta).setMaxResults(maximo).getResultList();
+    		for(Empleado em : emps) {
+    			System.out.println("ID: "+ em.getId() +"; Nombre: " + em.getNombre() + ", Apellido: " + em.getApellido());
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploCriteriaQueryProyeccion() {
+		//SELECT id AS codigo, apellido FROM empleado;
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		CriteriaBuilder builder = sesion.getCriteriaBuilder();
+    		CriteriaQuery<EmpleadoSimple> consulta = builder.createQuery(EmpleadoSimple.class);
+    		Root<Empleado> raiz = consulta.from(Empleado.class);
+    		consulta.select(builder.construct(EmpleadoSimple.class, raiz.get("id"), raiz.get("apellido")));
+    		List<EmpleadoSimple> emps = sesion.createQuery(consulta).getResultList();
+    		for(EmpleadoSimple em : emps) {
+    			System.out.println("ID: "+ em.getCodigo()+ ", Apellido: " + em.getApellido());
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploCriteriaQueryInnerJoin() {
+		// SELECT E.nombre, V.idprod, V.cantidad FROM empleado E INNER JOIN venta V ON E.id = V.idemp;
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		CriteriaBuilder builder = sesion.getCriteriaBuilder();
+    		CriteriaQuery<EmpleadoVentaJoin> consulta = builder.createQuery(EmpleadoVentaJoin.class);
+    		Root<Venta> raiz = consulta.from(Venta.class);
+    		raiz.join("empleado",JoinType.INNER);
+    		consulta.select(builder.construct(
+    				EmpleadoVentaJoin.class, 
+    				raiz.get("empleado").get("nombre"),
+    				raiz.get("idprod"),
+    				raiz.get("cantidad")
+    		));
+    		
+    		List<EmpleadoVentaJoin> emps = sesion.createQuery(consulta).getResultList();
+    		for(EmpleadoVentaJoin em : emps) {
+    			System.out.println("Nombre emp: "+ em.getNombre()+ ", Cantidad: " + em.getCantidad());
+    		}
     		tx.commit();
     	}catch(HibernateException he) {
     		if(tx!=null)

@@ -23,6 +23,12 @@ public class Venta {
 	@JoinColumn(name="idemp", nullable=false)
 	private Empleado empleado;
 	
+	public Empleado getEmpleado() {
+		return empleado;
+	}
+	public void setEmpleado(Empleado empleado) {
+		this.empleado = empleado;
+	}
 	public int getId() {
 		return id;
 	}

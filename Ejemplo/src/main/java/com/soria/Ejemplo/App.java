@@ -12,6 +12,7 @@ import org.hibernate.query.Query;
 import com.soria.Ejemplo.Modelo.Empleado;
 import com.soria.Ejemplo.Modelo.EmpleadoSimple;
 import com.soria.Ejemplo.Modelo.EmpleadoVentaJoin;
+import com.soria.Ejemplo.Modelo.FuncionesGroupBy;
 import com.soria.Ejemplo.Modelo.Venta;
 
 import jakarta.persistence.ParameterMode;
@@ -58,7 +59,12 @@ public class App
     	//ejemploCriteriaQueryOrderBy("ASC");
     	//ejemploCriteriaQueryOrderByLimit("DESC", 3);
     	//ejemploCriteriaQueryProyeccion();
-    	ejemploCriteriaQueryInnerJoin();
+    	//ejemploCriteriaQueryInnerJoin();
+    	//ejemploCriteriaQueryGroupBy();
+    	//ejemploCriteriaQueryFuncionesAgregacion();
+    	
+    	//ejemploAlcanceDatosUnoMuchos();
+    	ejemploAlcanceDatosMuchosUno();
     }
 
 	private static void ejemploLecturaEmpleados() {
@@ -792,6 +798,153 @@ DELIMITER;
     			System.out.println("Nombre emp: "+ em.getNombre()+ ", Cantidad: " + em.getCantidad());
     		}
     		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploCriteriaQueryGroupBy() {
+		/*
+		 * 	empresay=# SELECT idemp, COUNT(id), MAX(cantidad), MIN(cantidad), SUM(cantidad), AVG(cantidad)
+			empresay-# FROM venta GROUP BY idemp;
+		 * */
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		CriteriaBuilder builder = sesion.getCriteriaBuilder();
+    		CriteriaQuery<FuncionesGroupBy> consulta = builder.createQuery(FuncionesGroupBy.class);
+    		Root<Venta> raiz = consulta.from(Venta.class);
+    		consulta.groupBy(raiz.get("empleado").get("id"));
+    		consulta.select(builder.construct(
+    				FuncionesGroupBy.class, 
+    				raiz.get("empleado").get("id"),
+    				builder.count(raiz.get("id")),
+    				builder.max((Expression)raiz.get("cantidad")),
+    				builder.min((Expression)raiz.get("cantidad")),
+    				builder.sum((Expression)raiz.get("cantidad")),
+    				builder.avg((Expression)raiz.get("cantidad"))
+    		));
+    		
+    		List<FuncionesGroupBy> emps = sesion.createQuery(consulta).getResultList();
+    		for(FuncionesGroupBy em : emps) {
+    			System.out.println("id: "+ em.getId()+ 
+    					", Cantidad: " + em.getConteo()+ 
+    					", Maximo: " + em.getMax()+ 
+    					", Minimo: " + em.getMin()+ 
+    					", Sumatoria: " + em.getSum()+ 
+    					", Media: " + em.getMedia());
+    		}
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploCriteriaQueryFuncionesAgregacion() {
+		//empresay=# SELECT SUM(cantidad * 2) FROM venta;
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		
+    		CriteriaBuilder builder = sesion.getCriteriaBuilder();
+    		CriteriaQuery<Number> consulta = builder.createQuery(Number.class);
+    		Root<Venta> raiz = consulta.from(Venta.class);
+    		consulta.select(builder.sum(builder.prod(raiz.<Long>get("cantidad"), 2)));//acá variantes
+    		Number valor = sesion.createQuery(consulta).getSingleResult();
+    		System.out.println(valor);
+    		tx.commit();
+    		
+    		/*Variantes:
+    		 * consulta.select(builder.count(raiz.<Long>get("id")));
+    		 * consulta.select(builder.max(raiz.<Long>get("cantidad")));
+    		 * consulta.select(builder.avg(raiz.<Long>get("cantidad")));
+    		 * */
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploAlcanceDatosUnoMuchos() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		Query consulta = sesion.createQuery("FROM Empleado WHERE id = :id");
+    		consulta.setParameter("id", 5);
+    		Empleado emp = (Empleado) consulta.uniqueResult();
+    		tx.commit();
+    		System.out.println("Exito");
+    		for(Venta v : emp.getVentas())
+    			System.out.println("IDventa: " + v.getId() + 
+    					", cantidad: " + v.getCantidad() + ", Empleado: " + v.getEmpleado().getApellido());
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploAlcanceDatosMuchosUno() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		Query consulta = sesion.createQuery("FROM Venta WHERE id = :id");
+    		consulta.setParameter("id", 112);
+    		Venta v = (Venta) consulta.uniqueResult();
+    		tx.commit();
+    		System.out.println("Exito");
+    		System.out.printf("VentaID %d: %s (%d)\n", v.getId(), v.getEmpleado().getApellido(), v.getCantidad());
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploAlcanceDatosUnoUno() {
+		/*empresay=# CREATE TABLE empleado_detalles(
+		empresay(#   id_e_det INT NOT NULL PRIMARY KEY,
+		empresay(#   email VARCHAR(80) NOT NULL,
+		empresay(#   genero VARCHAR(1),
+		empresay(#   direccion VARCHAR(50),
+		empresay(#   CONSTRAINT fk_empleado_det FOREIGN KEY (id_e_det)
+		empresay(#   REFERENCES empleado(id)
+		empresay(# );*/
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		Query consulta = sesion.createQuery("FROM Venta WHERE id = :id");
+    		consulta.setParameter("id", 112);
+    		Venta v = (Venta) consulta.uniqueResult();
+    		tx.commit();
+    		System.out.println("Exito");
+    		System.out.printf("VentaID %d: %s (%d)\n", v.getId(), v.getEmpleado().getApellido(), v.getCantidad());
     	}catch(HibernateException he) {
     		if(tx!=null)
     			tx.rollback();

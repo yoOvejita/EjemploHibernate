@@ -12,6 +12,7 @@
 		<property name="show_sql">true</property>
 		<mapping class="com.soria.Ejemplo.Modelo.Empleado"/>
 		<mapping class="com.soria.Ejemplo.Modelo.Venta"/>
+		<mapping class="com.soria.Ejemplo.Modelo.EmpleadoDetalles"/>
 		<!-- <mapping resource="Empleado.hbm.xml"/>  -->
 	</session-factory>
 </hibernate-configuration>

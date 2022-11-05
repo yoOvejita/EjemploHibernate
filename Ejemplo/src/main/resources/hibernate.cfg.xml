@@ -13,6 +13,7 @@
 		<mapping class="com.soria.Ejemplo.Modelo.Empleado"/>
 		<mapping class="com.soria.Ejemplo.Modelo.Venta"/>
 		<mapping class="com.soria.Ejemplo.Modelo.EmpleadoDetalles"/>
+		<mapping class="com.soria.Ejemplo.Modelo.Producto"/>
 		<!-- <mapping resource="Empleado.hbm.xml"/>  -->
 	</session-factory>
 </hibernate-configuration>

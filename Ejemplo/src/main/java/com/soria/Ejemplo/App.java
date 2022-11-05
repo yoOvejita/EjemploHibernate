@@ -1,8 +1,10 @@
 package com.soria.Ejemplo;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
@@ -10,9 +12,11 @@ import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
 import com.soria.Ejemplo.Modelo.Empleado;
+import com.soria.Ejemplo.Modelo.EmpleadoDetalles;
 import com.soria.Ejemplo.Modelo.EmpleadoSimple;
 import com.soria.Ejemplo.Modelo.EmpleadoVentaJoin;
 import com.soria.Ejemplo.Modelo.FuncionesGroupBy;
+import com.soria.Ejemplo.Modelo.Producto;
 import com.soria.Ejemplo.Modelo.Venta;
 
 import jakarta.persistence.ParameterMode;
@@ -34,7 +38,7 @@ public class App
     public static void main( String[] args )
     {
     	
-        //ejemploRegistro();
+        ejemploRegistro();
         //ejemploLecturaEmpleados();
         //ejemploLecturaProyeccion();
         //ejemploWhere();
@@ -64,7 +68,10 @@ public class App
     	//ejemploCriteriaQueryFuncionesAgregacion();
     	
     	//ejemploAlcanceDatosUnoMuchos();
-    	ejemploAlcanceDatosMuchosUno();
+    	//ejemploAlcanceDatosMuchosUno();
+    	//ejemploAlcanceDatosUnoUno();
+    	//ejemploAlcanceDatosMuchosMuchos();
+    	//ejemploAlcanceDatosInsertUnoUno();
     }
 
 	private static void ejemploLecturaEmpleados() {
@@ -99,7 +106,7 @@ public class App
 
 	private static void ejemploRegistro() {
 		Empleado emp = new Empleado();
-    	emp.setId(92);
+    	emp.setId(920);
     	emp.setNombre("Ricardo");
     	emp.setApellido("Sanchez");
     	
@@ -939,12 +946,12 @@ DELIMITER;
     	try {
     		//Iniciar la sesión hibernate
     		tx = sesion.beginTransaction();
-    		Query consulta = sesion.createQuery("FROM Venta WHERE id = :id");
-    		consulta.setParameter("id", 112);
-    		Venta v = (Venta) consulta.uniqueResult();
+    		Query consulta = sesion.createQuery("FROM Empleado WHERE id = :id");
+    		consulta.setParameter("id", 5);
+    		Empleado emp = (Empleado) consulta.uniqueResult();
     		tx.commit();
     		System.out.println("Exito");
-    		System.out.printf("VentaID %d: %s (%d)\n", v.getId(), v.getEmpleado().getApellido(), v.getCantidad());
+    		System.out.printf("ID %d: %s (%s)\n", emp.getId(), emp.getApellido(), emp.getEmpleadoDetalles().getEmail());
     	}catch(HibernateException he) {
     		if(tx!=null)
     			tx.rollback();
@@ -953,5 +960,116 @@ DELIMITER;
     		sesion.close();
     	}
 		
+	}
+	private static void ejemploAlcanceDatosMuchosMuchos() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		Query consulta = sesion.createQuery("FROM Empleado WHERE id = :id");
+    		consulta.setParameter("id", 5);
+    		Empleado emp = (Empleado) consulta.uniqueResult();
+    		
+    		//otro ejemplo
+    		Query consulta2 = sesion.createQuery("FROM Producto WHERE id = :id");
+    		consulta2.setParameter("id", 3);
+    		Producto prod = (Producto) consulta2.uniqueResult();
+    		tx.commit();
+    		System.out.println("Exito");
+    		System.out.printf("ID %d: %s (%s)\n", emp.getId(), emp.getApellido(), emp.getEmpleadoDetalles().getEmail());
+    		for(Producto p : emp.getProductos()) {
+    			System.out.printf("Producto: %s (Bs.%f)\n", p.getNombre(),p.getPrecio());
+    		}
+    		System.out.println("=================");
+    		for(Empleado em : prod.getEmpleados()) {
+    			System.out.printf("Empleado: %s (ID:%s)\n", em.getApellido(),em.getId());
+    		}
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploAlcanceDatosInsertUnoUno() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		EmpleadoDetalles ed = new EmpleadoDetalles();
+    		ed.setDireccion("C. avenue #123");
+    		ed.setEmail("anonimo@gmail.com");
+    		ed.setGenero("M");
+    		ed.setId(555);
+    		Empleado emp = new Empleado();
+    		emp.setId(555);
+    		emp.setNombre("Raul");
+    		emp.setApellido("Mora");
+    		emp.setEmpleadoDetalles(ed);
+    		ed.setEmp(emp);
+    		sesion.save(emp);
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+	private static void ejemploAlcanceDatosInsertMuchosMuchos() {
+		Transaction tx = null;
+    	Session sesion = HibernateUtil.getSessionfactory().openSession();
+    	try {
+    		//Iniciar la sesión hibernate
+    		tx = sesion.beginTransaction();
+    		Empleado emp = new Empleado();
+    		emp.setId(555);
+    		emp.setNombre("Raul");
+    		emp.setApellido("Mora");
+    		Set<Producto> prods = new HashSet<Producto>();
+    		prods.add(obtenerProducto(sesion,5));
+    		prods.add(obtenerProducto(sesion,3));
+    		prods.add(obtenerProducto(sesion,1));
+    		emp.setProductos(prods);
+    		sesion.save(emp);
+    		
+    		Producto pp = new Producto();
+    		pp.setId(334);
+    		pp.setNombre("Toalla");
+    		pp.setPrecio(25);
+    		Set<Empleado> emm = new HashSet<Empleado>();
+    		emm.add(obtenerEmpleado(sesion,5));
+    		emm.add(obtenerEmpleado(sesion,77));
+    		emm.add(obtenerEmpleado(sesion,1));
+    		pp.setEmpleados(emm);
+    		sesion.save(pp);
+    		
+    		tx.commit();
+    	}catch(HibernateException he) {
+    		if(tx!=null)
+    			tx.rollback();
+    		he.printStackTrace();
+    	}finally {
+    		sesion.close();
+    	}
+		
+	}
+
+	private static Empleado obtenerEmpleado(Session sesion, int i) {
+		Query consulta = sesion.createQuery("FROM Empleado WHERE id = :id");
+		consulta.setParameter("id", i);
+		return (Empleado)consulta.uniqueResult();
+	}
+
+	private static Producto obtenerProducto(Session sesion, int i) {
+		Query consulta = sesion.createQuery("FROM Producto WHERE id = :id");
+		consulta.setParameter("id", i);
+		return (Producto)consulta.uniqueResult();
 	}
 }
